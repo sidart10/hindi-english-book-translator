@@ -1,0 +1,13 @@
+# Minimal requirements for Google Cloud setup and testing
+# For Task 1: Google Cloud Environment Setup
+
+# Google Cloud libraries
+google-cloud-aiplatform>=1.38.0
+google-cloud-translate>=3.11.0
+google-auth>=2.16.0
+
+# For later tasks (commented out for now)
+# PyMuPDF>=1.23.0  # For PDF processing
+# python-docx>=0.8.11  # For DOCX output
+# click>=8.0.0  # For CLI
+# aiohttp>=3.9.0  # For async operations 

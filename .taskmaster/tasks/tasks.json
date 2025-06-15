@@ -1,0 +1,178 @@
+{
+  "version": "1.0",
+  "currentTag": "master",
+  "tags": {
+    "master": {
+      "name": "master",
+      "description": "Main development tasks for Hindi-English book translation system using Google Cloud Translation LLM",
+      "createdAt": "2024-12-23T00:00:00Z",
+      "tasks": [
+        {
+          "id": 1,
+          "title": "Set up Google Cloud Environment and Translation API",
+          "description": "Configure Google Cloud project with Translation LLM and authentication",
+          "status": "done",
+          "priority": "high",
+          "dependencies": [],
+          "details": "1. Create Google Cloud project\n2. Enable Cloud Translation API (aiplatform service)\n3. Create service account with aiplatform.user role\n4. Download service account JSON key\n5. Set GOOGLE_APPLICATION_CREDENTIALS and GOOGLE_CLOUD_PROJECT env vars\n6. Install gcloud CLI and authenticate\n7. Set up endpoint: us-central1-aiplatform.googleapis.com\n8. Configure Translation LLM model path: projects/${PROJECT_ID}/locations/us-central1/models/general/translation-llm",
+          "testStrategy": "Run test_sample.py with Translation LLM API to verify Hindi to English translation works with 9k character limit",
+          "subtasks": []
+        },
+        {
+          "id": 2,
+          "title": "Create Core Translation Engine with Google Translation LLM",
+          "description": "Implement TranslationEngine class using Google Cloud aiplatform for Translation LLM",
+          "status": "done", 
+          "priority": "high",
+          "dependencies": [1],
+          "details": "Build translation_engine.py with:\n- TranslationConfig dataclass (9000 char limit, temperature=0)\n- TranslationEngine using aiplatform.gapic.PredictionServiceClient\n- PII scrubbing (_scrub_pii method) for phone numbers and emails\n- Character limit enforcement (max 256 sentences OR 9000 chars)\n- Line-by-line translation to maintain alignment\n- Batch processing with translate_chunk method\n- No caching for MVP\n- Error handling for API failures",
+          "testStrategy": "Test with sample Hindi sentences, verify PII scrubbing works, character limits enforced, line alignment preserved",
+          "subtasks": []
+        },
+        {
+          "id": 3,
+          "title": "Implement PDF Document Processor with Sentence Extraction",
+          "description": "Create document processor for extracting sentences from Hindi PDF files",
+          "status": "done",
+          "priority": "high", 
+          "dependencies": [],
+          "details": "Build document_processor.py with:\n- PDF text extraction using PyMuPDF (fitz)\n- OCR support with pytesseract for scanned pages\n- Sentence splitting for Hindi (। delimiter) and English (. ? !)\n- Replace em-dashes (—) with en-dashes (–)\n- Page and sentence tracking metadata\n- Generate JSONL segmentation file\n- Handle mixed Hindi/English content\n- Skip headers/footers/page numbers\n- Minimum sentence length filtering (>10 chars)\n- Support for PDF, EPUB, TXT, DOCX formats",
+          "testStrategy": "Test with the provided Hindi PDF 'बोरसी भर आँच-1', verify sentence extraction and JSONL generation",
+          "subtasks": []
+        },
+        {
+          "id": 4,
+          "title": "Create Cost Meter Component with Budget Alerts",
+          "description": "Implement cost tracking at $0.20 per 1000 characters with monthly budget alerts",
+          "status": "done",
+          "priority": "medium",
+          "dependencies": [],
+          "details": "Build CostMeter class:\n- Track cumulative cost at $0.20 per 1000 characters (Google's pricing)\n- Monthly budget configuration ($1000 default)\n- Alert when usage reaches 70% of budget\n- Cost logging with timestamps\n- check_threshold method for warnings\n- add_cost method to update running total\n- Integration with main controller",
+          "testStrategy": "Unit test with mock translations, verify cost calculations match $0.20/1k chars and 70% threshold alerts trigger",
+          "subtasks": []
+        },
+        {
+          "id": 5,
+          "title": "Build CLI Interface with Google Cloud Integration",
+          "description": "Create command-line interface for running translations with GCP parameters",
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [2, 3],
+          "details": "Implement cli.py using Click:\n- Input/output file parameters\n- Google Cloud project ID option (--project-id)\n- Service account path option (--service-account)\n- Config file support (--config)\n- Progress display during translation\n- Error handling with helpful messages\n- Cost display after completion\n- Set up GOOGLE_APPLICATION_CREDENTIALS env var",
+          "testStrategy": "Run end-to-end test with small PDF file using actual GCP credentials",
+          "subtasks": []
+        },
+        {
+          "id": 6,
+          "title": "Create Main Controller with Batch Processing",
+          "description": "Implement BookTranslationController with async batch processing and concurrency control",
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [2, 3, 4],
+          "details": "Build main_controller.py:\n- Load configuration from config.json\n- Process documents in batches (50 sentences default)\n- Asyncio Semaphore-based concurrency control (10 parallel requests)\n- Generate segmentation JSONL before translation\n- API rate limiting handling (429 errors)\n- Service unavailable (5xx) retry with exponential backoff\n- Cost meter integration with 70% budget warnings\n- Basic quality tracking with QA integration\n- _generate_output method for DOCX creation\n- Translation memory checks (skip for MVP)",
+          "testStrategy": "Test with 2-3 page PDF, verify batch processing, rate limiting, and DOCX output",
+          "subtasks": []
+        },
+        {
+          "id": 7,
+          "title": "Implement DOCX Output Generator with Page Preservation",
+          "description": "Create output generation for translated documents maintaining page structure",
+          "status": "pending",
+          "priority": "medium",
+          "dependencies": [6],
+          "details": "Add to controller:\n- DOCX document creation with python-docx\n- Page break preservation from source PDF\n- Translation text with original page tracking\n- Add page headers (Page N)\n- Quality score warnings for translations below 0.8 threshold\n- Basic formatting (title, headings)\n- Caption style for quality warnings\n- Save to specified output path",
+          "testStrategy": "Verify DOCX opens correctly with proper page breaks and formatting preserved",
+          "subtasks": []
+        },
+        {
+          "id": 8,
+          "title": "Create Configuration System with Google Cloud Settings",
+          "description": "Set up configuration files for Translation LLM and processing parameters",
+          "status": "pending",
+          "priority": "medium",
+          "dependencies": [],
+          "details": "Create configuration files:\n- config.json with Google Translation LLM settings\n- Model path: projects/${PROJECT_ID}/locations/us-central1/models/general/translation-llm\n- requirements-minimal.txt for 2-hour sprint\n- .env.example with GOOGLE_APPLICATION_CREDENTIALS\n- Set max_characters to 9000\n- Configure batch size (50) and concurrency (10)\n- Set temperature to 0 for consistency\n- Monthly budget: $1000\n- Quota limit semaphore: 10",
+          "testStrategy": "Load config in main controller, verify all Google Cloud settings applied correctly",
+          "subtasks": []
+        },
+        {
+          "id": 9,
+          "title": "Implement Translation Memory with SQLite",
+          "description": "Add SQLite-based translation memory for consistency and cost optimization",
+          "status": "pending",
+          "priority": "medium",
+          "dependencies": [2],
+          "details": "Build translation_memory.py:\n- SQLite database with translations and terminology tables\n- Store: source_hash, source_text, translated_text, confidence, log_prob\n- Cache lookups by source text hash\n- Project-based organization\n- Skip re-translation of high-confidence (>0.9) cached content\n- Terminology glossary management\n- Usage count tracking\n- Created/updated timestamps",
+          "testStrategy": "Translate same content twice, verify cache hit on second run, cost savings realized",
+          "subtasks": []
+        },
+        {
+          "id": 10,
+          "title": "Create Quality Assurance System with MQM Metrics",
+          "description": "Implement comprehensive QA checks including MQM defect scoring and back-translation",
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [2],
+          "details": "Build quality_assurance.py:\n- Length ratio validation (0.8-1.5 acceptable range)\n- Glossary hit rate checking (≥98% required)\n- Back-translation similarity using NLLB embeddings\n- MQM defect scoring (≤3 defects per 1000 words)\n- Zero critical errors requirement\n- Proper noun consistency checks\n- Number/date validation\n- Punctuation preservation\n- Integration with spaCy for NLP analysis\n- Cosine similarity threshold: 0.85",
+          "testStrategy": "Run QA on sample translations, verify defect detection and scoring accuracy",
+          "subtasks": []
+        },
+        {
+          "id": 11,
+          "title": "Build Streamlit Review Dashboard",
+          "description": "Create web interface for translation review and quality assurance",
+          "status": "pending",
+          "priority": "low",
+          "dependencies": [10],
+          "details": "Build qa_dashboard.py with Streamlit:\n- Side-by-side Hindi/English display\n- Editable translation text areas\n- Accept/Fix buttons for each translation\n- Filter by confidence level or issues\n- Search functionality\n- Quality issue warnings display\n- Save edits back to translation memory\n- Human-verified confidence (1.0) for edited translations\n- Project-based organization",
+          "testStrategy": "Review sample chapter, make edits, verify updates saved to translation memory",
+          "subtasks": []
+        },
+        {
+          "id": 12,
+          "title": "Add Advanced Error Handling and Retries",
+          "description": "Implement robust error handling for API failures and edge cases",
+          "status": "pending",
+          "priority": "medium",
+          "dependencies": [6],
+          "details": "Enhanced error handling:\n- API rate limiting (429) with exponential backoff\n- Service unavailable (5xx) with 3 retries\n- Invalid credentials with clear error message\n- PDF extraction failures with fallback\n- Character limit exceeded with truncation\n- Network timeouts with retry logic\n- Asyncio semaphore for quota management\n- Cost threshold alerts integration",
+          "testStrategy": "Test with invalid credentials, large batches, simulated network failures",
+          "subtasks": []
+        },
+        {
+          "id": 13,
+          "title": "Create Comprehensive Documentation",
+          "description": "Write setup guides and API documentation for the system",
+          "status": "pending",
+          "priority": "low",
+          "dependencies": [11],
+          "details": "Document:\n- Prerequisites (Python 3.8+, Google Cloud account)\n- Google Cloud setup walkthrough with screenshots\n- Service account creation steps\n- Translation LLM API enablement\n- Basic usage examples\n- Cost estimation guide ($0.20/1k chars)\n- Troubleshooting common issues\n- API reference documentation\n- Configuration options",
+          "testStrategy": "Have someone else follow the guide to set up the system from scratch",
+          "subtasks": []
+        },
+        {
+          "id": 14,
+          "title": "Implement Progress Tracking with tqdm",
+          "description": "Add visual progress indicators during translation process",
+          "status": "pending",
+          "priority": "low",
+          "dependencies": [6],
+          "details": "Add progress tracking:\n- Display current batch number (N/Total)\n- Show sentences processed vs total\n- Estimate time remaining based on rate\n- Display current cost in real-time\n- Use tqdm for progress bars\n- Show characters processed\n- Update every batch completion",
+          "testStrategy": "Run translation on 100+ page document, verify progress updates are smooth and accurate",
+          "subtasks": []
+        },
+        {
+          "id": 15,
+          "title": "Run MVP Test with First 3 Pages",
+          "description": "End-to-end test of the system with actual Hindi book content",
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [1, 2, 3, 4, 5, 6, 7, 8],
+          "details": "MVP validation test:\n1. Extract text from 'बोरसी भर आँच-1' PDF (first 3 pages)\n2. Generate segmentation JSONL\n3. Translate using Google Translation LLM\n4. Monitor costs (should be ~$0.60 for 3 pages)\n5. Check MQM defects (≤3 per 1000 words)\n6. Verify line alignment preserved\n7. Generate DOCX output with page breaks\n8. Manual review of translation quality\n9. Document any issues found\n10. Verify 70% budget alert if applicable",
+          "testStrategy": "Compare source PDF with output DOCX, check sentence alignment, verify quality metrics",
+          "subtasks": []
+        }
+      ]
+    }
+  }
+}

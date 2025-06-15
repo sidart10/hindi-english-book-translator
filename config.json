@@ -1,0 +1,34 @@
+{
+  "translation": {
+    "source_language": "hi",
+    "target_language": "en",
+    "model": "projects/${PROJECT_ID}/locations/us-central1/models/general/translation-llm",
+    "temperature": 0,
+    "max_characters": 9000,
+    "preserve_formatting": true
+  },
+  "processing": {
+    "batch_size": 50,
+    "quota_limit": 10,
+    "max_retries": 3,
+    "chunk_size": 256
+  },
+  "cost": {
+    "monthly_budget": 1000,
+    "alert_threshold": 0.7,
+    "price_per_1k_chars": 0.20
+  },
+  "quality": {
+    "min_confidence": 0.85,
+    "require_review_below": 0.7,
+    "max_length_ratio": 1.5,
+    "min_length_ratio": 0.8
+  },
+  "output": {
+    "format": "docx",
+    "include_original": false,
+    "include_notes": true,
+    "include_alternatives": false,
+    "bilingual_pdf": false
+  }
+} 

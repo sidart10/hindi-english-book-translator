@@ -55,7 +55,7 @@
           "id": 5,
           "title": "Build CLI Interface with Google Cloud Integration",
           "description": "Create command-line interface for running translations with GCP parameters",
-          "status": "pending",
+          "status": "done",
           "priority": "high",
           "dependencies": [2, 3],
           "details": "Implement cli.py using Click:\n- Input/output file parameters\n- Google Cloud project ID option (--project-id)\n- Service account path option (--service-account)\n- Config file support (--config)\n- Progress display during translation\n- Error handling with helpful messages\n- Cost display after completion\n- Set up GOOGLE_APPLICATION_CREDENTIALS env var",

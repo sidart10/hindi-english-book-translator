@@ -25,10 +25,11 @@
     "min_length_ratio": 0.8
   },
   "output": {
-    "format": "docx",
-    "include_original": false,
-    "include_notes": true,
-    "include_alternatives": false,
-    "bilingual_pdf": false
+    "format": "latex",
+    "document_class": "book",
+    "title": "Hindi to English Translation",
+    "author": "Translation System",
+    "include_source": false,
+    "include_qa_details": true
   }
 } 

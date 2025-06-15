@@ -56,7 +56,7 @@ def validate_config_file(ctx, param, value):
 @click.option(
     '--output', '-o',
     required=True,
-    help='Output DOCX file path'
+    help='Output LaTeX file path'
 )
 @click.option(
     '--config', '-c',
@@ -102,18 +102,18 @@ def translate_book(input, output, config, project_id, service_account,
     Examples:
     
         # Basic usage with environment variables already set
-        book-translator --input book.pdf --output translation.docx
+        book-translator --input book.pdf --output translation.tex
         
         # Specify Google Cloud credentials
-        book-translator -i book.pdf -o translation.docx \\
+        book-translator -i book.pdf -o translation.tex \\
             --project-id my-project \\
             --service-account /path/to/key.json
         
         # Dry run to estimate cost
-        book-translator -i book.pdf -o translation.docx --dry-run
+        book-translator -i book.pdf -o translation.tex --dry-run
         
         # Custom batch size and budget
-        book-translator -i book.pdf -o translation.docx \\
+        book-translator -i book.pdf -o translation.tex \\
             --batch-size 100 --monthly-budget 500
     """
     

@@ -75,13 +75,13 @@
         },
         {
           "id": 7,
-          "title": "Implement DOCX Output Generator with Page Preservation",
+          "title": "Implement LaTeX Output Generator with Page Preservation",
           "description": "Create output generation for translated documents maintaining page structure",
-          "status": "pending",
+          "status": "done",
           "priority": "medium",
           "dependencies": [6],
-          "details": "Add to controller:\n- DOCX document creation with python-docx\n- Page break preservation from source PDF\n- Translation text with original page tracking\n- Add page headers (Page N)\n- Quality score warnings for translations below 0.8 threshold\n- Basic formatting (title, headings)\n- Caption style for quality warnings\n- Save to specified output path",
-          "testStrategy": "Verify DOCX opens correctly with proper page breaks and formatting preserved",
+          "details": "Implemented LaTeX output generation instead of DOCX:\n- LaTeXOutputGenerator class with professional book typesetting\n- Multilingual support with polyglossia and fontspec\n- Page break preservation from source PDF\n- Chapter/section structure based on document class\n- Quality warnings in margin notes with color-coding\n- Optional Hindi source text in footnotes\n- Automatic compilation script generation\n- Support for book/article/report document classes\n- XeLaTeX/LuaLaTeX compatibility for Unicode\n- Direct upload to Overleaf ready\n- QA report appendix generation",
+          "testStrategy": "Verify LaTeX compiles correctly with XeLaTeX, proper page breaks and multilingual text preserved",
           "subtasks": []
         },
         {
@@ -110,7 +110,7 @@
           "id": 10,
           "title": "Create Quality Assurance System with MQM Metrics",
           "description": "Implement comprehensive QA checks including MQM defect scoring and back-translation",
-          "status": "pending",
+          "status": "done",
           "priority": "high",
           "dependencies": [2],
           "details": "Build quality_assurance.py:\n- Length ratio validation (0.8-1.5 acceptable range)\n- Glossary hit rate checking (≥98% required)\n- Back-translation similarity using NLLB embeddings\n- MQM defect scoring (≤3 defects per 1000 words)\n- Zero critical errors requirement\n- Proper noun consistency checks\n- Number/date validation\n- Punctuation preservation\n- Integration with spaCy for NLP analysis\n- Cosine similarity threshold: 0.85",

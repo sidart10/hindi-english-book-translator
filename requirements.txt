@@ -5,7 +5,7 @@ google-auth>=2.16.0
 
 # Document processing
 PyMuPDF>=1.23.0        # For PDF processing
-python-docx>=0.8.11    # For DOCX output and input
+python-docx>=0.8.11    # For DOCX input processing
 ebooklib>=0.18         # For EPUB processing
 pytesseract>=0.3.10    # For OCR support
 Pillow>=10.0.0         # Image processing for OCR
@@ -18,6 +18,11 @@ asyncio                # Built-in, but listed for clarity
 # Progress and utilities
 tqdm>=4.65.0           # Progress bars
 python-dateutil>=2.8.2 # Date handling
+
+# Quality Assurance dependencies
+spacy>=3.7.0           # For NLP analysis
+numpy>=1.24.0          # For numerical operations
+sentence-transformers>=2.2.0  # For NLLB embeddings and back-translation similarity
 
 # Future additions (for later tasks)
 # streamlit>=1.28.0    # For review dashboard (Task 11)

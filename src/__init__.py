@@ -10,6 +10,8 @@ __author__ = "Sid Dani"
 from .translation_engine import TranslationEngine, TranslationConfig
 from .document_processor import DocumentProcessor, DocumentSegment
 from .cost_meter import CostMeter
+from .quality_assurance import QualityAssurance, QAConfig
+from .latex_output import LaTeXOutputGenerator
 from .main_controller import BookTranslationController
 
 __all__ = [
@@ -18,5 +20,8 @@ __all__ = [
     "DocumentProcessor",
     "DocumentSegment",
     "CostMeter",
+    "QualityAssurance",
+    "QAConfig",
+    "LaTeXOutputGenerator",
     "BookTranslationController",
 ] 

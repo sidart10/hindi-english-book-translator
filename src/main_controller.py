@@ -12,14 +12,12 @@ from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 import aiohttp
 from asyncio import Semaphore
-from docx import Document
-from docx.shared import Pt
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-
 # Import our components
-from translation_engine import TranslationEngine, TranslationConfig
-from document_processor import DocumentProcessor
-from cost_meter import CostMeter
+from .translation_engine import TranslationEngine, TranslationConfig
+from .document_processor import DocumentProcessor
+from .cost_meter import CostMeter
+from .quality_assurance import QualityAssurance, QAConfig
+from .latex_output import LaTeXOutputGenerator
 
 
 class BookTranslationController:
@@ -44,6 +42,19 @@ class BookTranslationController:
             alert_threshold=self.config.get("cost", {}).get("alert_threshold", 0.7)
         )
         
+        # Initialize Quality Assurance
+        qa_config = self.config.get("quality", {})
+        self.quality_assurance = QualityAssurance(
+            QAConfig(
+                min_length_ratio=qa_config.get("min_length_ratio", 0.8),
+                max_length_ratio=qa_config.get("max_length_ratio", 1.5),
+                min_glossary_hit_rate=qa_config.get("min_glossary_hit_rate", 0.98),
+                min_cosine_similarity=qa_config.get("min_cosine_similarity", 0.85),
+                max_mqm_defects_per_1000=qa_config.get("max_mqm_defects_per_1000", 3),
+                max_critical_errors=qa_config.get("max_critical_errors", 0)
+            )
+        )
+        
         # Set up concurrency control
         self.semaphore = Semaphore(
             self.config.get("processing", {}).get("quota_limit", 10)
@@ -52,6 +63,13 @@ class BookTranslationController:
         # Processing parameters
         self.batch_size = self.config.get("processing", {}).get("batch_size", 50)
         self.max_retries = self.config.get("processing", {}).get("max_retries", 3)
+        
+        # Initialize LaTeX generator
+        self.latex_generator = LaTeXOutputGenerator(
+            title=self.config.get("output", {}).get("title", "Hindi to English Translation"),
+            author=self.config.get("output", {}).get("author", "Translation System"),
+            document_class=self.config.get("output", {}).get("document_class", "book")
+        )
         
         print(f"Controller initialized with batch_size={self.batch_size}, "
               f"concurrency={self.config.get('processing', {}).get('quota_limit', 10)}")
@@ -80,7 +98,13 @@ class BookTranslationController:
                     "alert_threshold": 0.7
                 },
                 "quality": {
-                    "min_confidence": 0.85
+                    "min_confidence": 0.85,
+                    "min_length_ratio": 0.8,
+                    "max_length_ratio": 1.5,
+                    "min_glossary_hit_rate": 0.98,
+                    "min_cosine_similarity": 0.85,
+                    "max_mqm_defects_per_1000": 3,
+                    "max_critical_errors": 0
                 }
             }
     
@@ -91,7 +115,7 @@ class BookTranslationController:
         
         Args:
             input_path: Path to input document
-            output_path: Path for output DOCX
+            output_path: Path for output LaTeX file
             project_id: Optional project identifier
             
         Returns:
@@ -114,7 +138,13 @@ class BookTranslationController:
                 "total_characters": 0,
                 "total_cost": 0.0,
                 "errors": [],
-                "quality_warnings": []
+                "quality_warnings": [],
+                "mqm_defects": 0,
+                "critical_errors": 0,
+                "average_quality_score": 0.0,
+                "glossary_hit_rate": 0.0,
+                "qa_passed": 0,
+                "qa_failed": 0
             }
         }
         
@@ -141,9 +171,49 @@ class BookTranslationController:
             results["statistics"]["translated_sentences"] = len(translated_sentences)
             results["statistics"]["total_cost"] = self.cost_meter.current_cost
             
-            # Step 4: Generate output DOCX
-            print(f"\n📄 Generating output document...")
-            self._generate_output(translated_sentences, output_path)
+            # Calculate QA statistics
+            qa_results = []
+            total_defects = 0
+            total_critical = 0
+            total_quality_score = 0.0
+            qa_passed = 0
+            qa_failed = 0
+            
+            for sent in translated_sentences:
+                if "qa_result" in sent:
+                    qa_result = sent["qa_result"]
+                    qa_results.append(qa_result)
+                    
+                    total_defects += qa_result.get("mqm_defects", 0)
+                    total_critical += qa_result.get("critical_errors", 0)
+                    total_quality_score += qa_result.get("overall_score", 0)
+                    
+                    if qa_result.get("passed", False):
+                        qa_passed += 1
+                    else:
+                        qa_failed += 1
+            
+            # Update statistics
+            if qa_results:
+                results["statistics"]["mqm_defects"] = total_defects
+                results["statistics"]["critical_errors"] = total_critical
+                results["statistics"]["average_quality_score"] = total_quality_score / len(qa_results)
+                results["statistics"]["qa_passed"] = qa_passed
+                results["statistics"]["qa_failed"] = qa_failed
+                
+                # Generate QA report
+                qa_report = self.quality_assurance.generate_qa_report(qa_results)
+                results["qa_report"] = qa_report
+                
+                print(f"\n📊 Quality Assurance Summary:")
+                print(f"   Average Score: {results['statistics']['average_quality_score']:.2%}")
+                print(f"   MQM Defects: {total_defects} ({total_defects / (len(sentences) / 1000):.1f} per 1000 sentences)")
+                print(f"   Critical Errors: {total_critical}")
+                print(f"   QA Passed: {qa_passed}/{len(qa_results)} ({qa_passed/len(qa_results)*100:.1f}%)")
+            
+            # Step 4: Generate output LaTeX
+            print(f"\n📄 Generating LaTeX document...")
+            self._generate_output(translated_sentences, output_path, qa_report)
             
             # Step 5: Final statistics
             results["end_time"] = datetime.now().isoformat()
@@ -232,9 +302,27 @@ class BookTranslationController:
                 sent_dict["translation"] = trans_result.get("translation", "")
                 sent_dict["confidence"] = trans_result.get("confidence", 0.0)
                 
-                # Basic quality check
-                if trans_result.get("confidence", 0) < self.config.get("quality", {}).get("min_confidence", 0.85):
-                    sent_dict["quality_warning"] = "Low confidence translation"
+                # Run quality assurance checks
+                source_text = sent_dict.get("text", "")
+                translation_text = trans_result.get("translation", "")
+                
+                if source_text and translation_text:
+                    qa_result = await self.quality_assurance.run_quality_checks(
+                        source_text,
+                        translation_text,
+                        self.translation_engine.glossary,
+                        self.translation_engine
+                    )
+                    
+                    sent_dict["qa_result"] = qa_result
+                    
+                    # Add quality warnings
+                    if not qa_result["passed"]:
+                        sent_dict["quality_warning"] = f"QA Failed: Score {qa_result['overall_score']:.2f}"
+                        if qa_result["issues"]:
+                            sent_dict["quality_issues"] = qa_result["issues"]
+                    elif qa_result["warnings"]:
+                        sent_dict["quality_warning"] = f"QA Warnings: {len(qa_result['warnings'])} found"
                 
                 translated_sentences.append(sent_dict)
             
@@ -288,51 +376,59 @@ class BookTranslationController:
         return [{"translation": "", "error": "Max retries exceeded"} for _ in texts]
     
     def _generate_output(self, translated_sentences: List[Dict], 
-                        output_path: str):
-        """Generate DOCX output with translations"""
-        doc = Document()
+                        output_path: str,
+                        qa_report: Optional[Dict] = None):
+        """Generate LaTeX output with translations"""
+        # Update LaTeX generator title if available
+        input_filename = Path(self.config.get("input_file", "Unknown")).stem
+        self.latex_generator.title = self._escape_for_latex(input_filename)
         
-        # Add title
-        title = doc.add_heading('Hindi to English Translation', 0)
-        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        # Generate main LaTeX document
+        latex_path = self.latex_generator.generate_latex(
+            translated_sentences,
+            output_path,
+            include_source=self.config.get("output", {}).get("include_source", False),
+            include_qa_details=self.config.get("output", {}).get("include_qa_details", True)
+        )
         
-        # Add metadata
-        doc.add_paragraph(f"Translation Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-        doc.add_paragraph(f"Total Sentences: {len(translated_sentences)}")
-        doc.add_paragraph("")
-        
-        # Track page numbers
-        current_page = None
-        
-        for sent in translated_sentences:
-            # Add page break when page changes
-            if sent.get("page") != current_page:
-                if current_page is not None:
-                    doc.add_page_break()
-                current_page = sent.get("page")
-                
-                # Add page header
-                page_header = doc.add_heading(f'Page {current_page}', level=1)
-                page_header.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                doc.add_paragraph("")
+        # If we have a QA report, append it
+        if qa_report:
+            appendix = self.latex_generator.generate_quality_report_appendix(qa_report)
             
-            # Add translated text
-            para = doc.add_paragraph(sent.get("translation", ""))
+            # Append to the LaTeX file (before \end{document})
+            with open(latex_path, 'r', encoding='utf-8') as f:
+                content = f.read()
             
-            # Add quality warning if present
-            if sent.get("quality_warning"):
-                warning = doc.add_paragraph(
-                    f"⚠️ {sent['quality_warning']} (confidence: {sent.get('confidence', 0):.2f})"
-                )
-                warning.style = 'Caption'
-                
-                # Make warning text smaller and gray
-                for run in warning.runs:
-                    run.font.size = Pt(10)
+            # Insert appendix before \end{document}
+            content = content.replace("\\end{document}", appendix + "\n\\end{document}")
+            
+            with open(latex_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            
+            print(f"   Quality report appended to LaTeX document")
+    
+    def _escape_for_latex(self, text: str) -> str:
+        """Helper to escape text for LaTeX"""
+        if not text:
+            return ""
         
-        # Save document
-        doc.save(output_path)
-        print(f"   Document saved to: {output_path}")
+        special_chars = {
+            '&': r'\&',
+            '%': r'\%',
+            '$': r'\$',
+            '#': r'\#',
+            '_': r'\_',
+            '{': r'\{',
+            '}': r'\}',
+            '~': r'\textasciitilde{}',
+            '^': r'\textasciicircum{}',
+            '\\': r'\textbackslash{}',
+        }
+        
+        for char, replacement in special_chars.items():
+            text = text.replace(char, replacement)
+        
+        return text
 
 
 # Test function
@@ -354,7 +450,7 @@ async def test_controller():
     controller = BookTranslationController()
     
     # Run translation
-    output_file = "test_controller_output.docx"
+    output_file = "test_controller_output.tex"
     
     try:
         results = await controller.translate_book(

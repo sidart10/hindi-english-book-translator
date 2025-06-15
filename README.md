@@ -5,13 +5,14 @@ A powerful system for translating Hindi books to English using Google Cloud Tran
 ## Features ✨
 
 - **Multi-format Support**: PDF, EPUB, TXT, and DOCX files
+- **Professional LaTeX Output**: Generates book-ready LaTeX documents for Overleaf and PDF compilation
 - **Google Cloud Translation**: Leverages Google's Translation API for high-quality translations
 - **Cost Tracking**: Real-time cost monitoring with budget alerts
-- **Quality Assurance**: MQM-based quality metrics and glossary consistency checks
+- **Quality Assurance**: MQM-based quality metrics with back-translation similarity checks
 - **PII Protection**: Automatic scrubbing of phone numbers, emails, and Aadhaar numbers
 - **OCR Support**: Handles scanned PDFs using pytesseract
 - **Translation Memory**: SQLite-based caching to avoid retranslating content
-- **Cultural Preservation**: Maintains honorifics and cultural terms with explanations
+- **Cultural Preservation**: Maintains honorifics and cultural terms with glossary support
 - **Future-Ready**: Pre-integrated support for Mistral's upcoming OCR API
 
 ## Project Structure 📁
@@ -24,6 +25,7 @@ book-translator/
 │   ├── cost_meter.py           # Cost tracking and budget management
 │   ├── main_controller.py      # Main application controller
 │   ├── quality_assurance.py    # QA and validation system
+│   ├── latex_output.py         # LaTeX document generation
 │   ├── translation_memory.py   # Translation caching
 │   ├── mistral_ocr_processor.py # Future Mistral OCR integration
 │   └── cli.py                  # Command-line interface
@@ -86,7 +88,7 @@ Translate a book:
 ```bash
 python src/cli.py \
     --input "path/to/hindi-book.pdf" \
-    --output "translated-book.docx" \
+    --output "translated-book.tex" \
     --project-id YOUR_PROJECT_ID \
     --service-account service-account.json
 ```
@@ -95,9 +97,18 @@ With cost tracking:
 ```bash
 python src/cli.py \
     --input "book.pdf" \
-    --output "translation.docx" \
+    --output "translation.tex" \
     --budget 100 \
     --alert-threshold 0.7
+```
+
+Compile LaTeX to PDF:
+```bash
+# After translation, compile with XeLaTeX
+xelatex translation.tex
+xelatex translation.tex  # Run twice for references
+
+# Or upload translation.tex to Overleaf
 ```
 
 ## Configuration ⚙️
@@ -156,22 +167,24 @@ The system includes a built-in glossary for common Hindi terms:
 
 ### Completed Features ✅
 - [x] Google Cloud Translation integration
-- [x] Multi-format document processing
-- [x] Real-time cost tracking
-- [x] PII scrubbing
-- [x] Basic quality assurance
-- [x] Translation memory
+- [x] Multi-format document processing (PDF, EPUB, TXT, DOCX)
+- [x] Real-time cost tracking with budget alerts
+- [x] PII scrubbing for privacy protection
+- [x] Comprehensive quality assurance with MQM scoring
+- [x] Professional LaTeX output generation
+- [x] CLI interface with batch options
+- [x] Main controller with asyncio batch processing
+- [x] Configuration system
 
 ### In Progress 🚧
-- [ ] CLI interface (Task 5)
-- [ ] Main controller with batch processing (Task 6)
-- [ ] Configuration system (Task 8)
+- [ ] Translation memory implementation (Task 9)
+- [ ] Advanced error handling and retries (Task 12)
 
 ### Future Enhancements 🔮
 - [ ] Streamlit review dashboard
-- [ ] Advanced error handling
 - [ ] Progress tracking with tqdm
 - [ ] Mistral OCR integration (when API becomes available)
+- [ ] MVP test with full book translation
 
 ## Testing 🧪
 
